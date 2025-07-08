@@ -4,13 +4,25 @@ from transformers import BertTokenizer, BertForSequenceClassification
 import torch.nn.functional as F
 from deep_translator import GoogleTranslator
 from langdetect import detect
+import os
+from pathlib import Path
+
 st.set_page_config(page_title="🌍 Multilingual BERT Sentiment Classifier", layout="centered")
 # Load model and tokenizer
 @st.cache_resource
 def load_model():
-    model = BertForSequenceClassification.from_pretrained('dashboard/bert_sentiment_model')
-    tokenizer = BertTokenizer.from_pretrained('dashboard/bert_sentiment_model')
+    # Force clean absolute path with forward slashes
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    model_path = os.path.join(base_dir, "dashboard", "bert_sentiment_model")
+    model_path = model_path.replace("\\", "/")  # 👈 ensure POSIX-style path
+
+    if not os.path.isdir(model_path):
+        raise FileNotFoundError(f"❌ Model folder not found at: {model_path}")
+
+    tokenizer = BertTokenizer.from_pretrained(model_path, local_files_only=True)
+    model = BertForSequenceClassification.from_pretrained(model_path, local_files_only=True)
     return tokenizer, model
+
 
 tokenizer, model = load_model()
 model.eval()
